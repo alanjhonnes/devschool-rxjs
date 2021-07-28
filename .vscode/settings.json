@@ -1,0 +1,6 @@
+{
+    "typescript.locale": "pt-BR",
+    "editor.formatOnSave": true,
+    "workbench.colorTheme": "Default Dark+",
+    "js/ts.implicitProjectConfig.strictNullChecks": true
+}

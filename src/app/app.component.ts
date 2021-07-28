@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { Observable } from 'rxjs';
+import { map, tap } from 'rxjs/operators';
 import { RequestsService } from './requests.service';
 import { PostsState, StateService } from './state.service';
 import { Post } from './types';
@@ -15,12 +16,35 @@ export class AppComponent {
   loading: boolean = false;
 
   state$: Observable<PostsState>;
+  postCount$: Observable<number>;
+  posts$: Observable<Post[]>;
 
   constructor(
     public requestsService: RequestsService,
     public stateService: StateService,
   ) {
-    this.state$ = this.stateService.getStateStream();
+    this.state$ = this.stateService.getStateStream()
+      .pipe(
+        tap({
+          next: console.log,
+          error: console.error,
+          complete: console.warn,
+        }),
+      );
+
+    this.posts$ = this.state$
+      .pipe(
+        map(
+          state => state.posts,
+        )
+      )
+
+    this.postCount$ = this.posts$
+      .pipe(
+        map(
+          posts => posts.length,
+        )
+      )
   }
 
   getPosts() {

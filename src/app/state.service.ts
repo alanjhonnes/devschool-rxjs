@@ -19,8 +19,11 @@ export class StateService {
 
   constructor() { }
 
-  setState(state: PostsState) {
-    this.state$.next(state);
+  setState(state: Partial<PostsState>) {
+    this.state$.next({
+      ...this.state$.getValue(),
+      ...state,
+    });
   }
 
   getStateStream() {

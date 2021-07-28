@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { interval, map, Observable } from 'rxjs';
-import { delay } from 'rxjs/operators';
+import { BehaviorSubject, interval, map, Observable } from 'rxjs';
+import { delay, mergeMap } from 'rxjs/operators';
+import { StateService } from './state.service';
 import { Post } from './types';
 
 @Injectable({
@@ -8,27 +9,18 @@ import { Post } from './types';
 })
 export class RequestsService {
 
-  posts: Post[] = [
-    {
-      id: 1,
-      title: 'Post 1',
-      content: 'Conteudo 1',
-    },
-    {
-      id: 2,
-      title: 'Post 2',
-      content: 'Conteudo 2',
-    }
-  ]
+  posts$ = new BehaviorSubject<Post[]>([]);
 
-  constructor() { }
+  constructor(
+    private stateService: StateService,
+  ) { }
 
   getPosts(): Observable<Post[]> {
     return new Observable<Post[]>(
       subscriber => {
         console.log('getPosts new subscriber');
         const timeoutId = setTimeout(() => {
-          subscriber.next(this.posts);
+          subscriber.next(this.posts$.getValue());
           subscriber.complete();
           console.log('getPosts emitted');
         }, 1000 + Math.random() * 3000);
@@ -44,7 +36,7 @@ export class RequestsService {
     return new Observable<Post | null>(subscriber => {
       console.log(`getPost(${id}) new subscriber`);
       const timeoutId = setTimeout(() => {
-        const post = this.posts.find(post => post.id === id) || null;
+        const post = this.posts$.getValue().find(post => post.id === id) || null;
         subscriber.next(post);
         subscriber.complete();
         console.log(`getPost(${id}) emitted`);
@@ -58,19 +50,19 @@ export class RequestsService {
   }
 
   getStreamOfPosts(): Observable<Post[]> {
-    return interval(1000)
-      .pipe(
-        map(() => this.posts)
-      );
+    return this.posts$.asObservable();
   }
 
   changePosts() {
     const numberOfPosts = Math.ceil(Math.random() * 4);
     const newPosts: Post[] = [];
-    for(let i = 0; i < numberOfPosts; i++) {
+    for (let i = 0; i < numberOfPosts; i++) {
       newPosts.push(createRandomPost());
     }
-    this.posts = newPosts;
+    this.posts$.next(newPosts);
+    this.stateService.setState({
+      posts: newPosts,
+    })
   }
 
 }

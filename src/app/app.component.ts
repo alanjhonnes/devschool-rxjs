@@ -25,14 +25,14 @@ export class AppComponent {
 
   getPosts() {
     this.requestsService.getPosts()
-    .subscribe({
-      next: (posts) => {
-        console.log(`getPosts next:`, posts);
-        this.posts = posts;
-      },
-      error: (error) => console.log(`getPosts error:`, error),
-      complete: () => console.log(`getPosts complete`),
-    })
+      .subscribe({
+        next: (posts) => {
+          console.log(`getPosts next:`, posts);
+          this.posts = posts;
+        },
+        error: (error) => console.log(`getPosts error:`, error),
+        complete: () => console.log(`getPosts complete`),
+      })
 
   }
 
@@ -48,11 +48,14 @@ export class AppComponent {
   getPostStream() {
     return this.requestsService.getStreamOfPosts()
       .subscribe({
-        next: (posts) => console.log(`getPostStream next: ${posts}`),
-        error: (error) => console.log(`getPostStream error: ${error}`),
+        next: (posts) => {
+          console.log(`getPostStream next:`, posts);
+          this.posts = posts;
+        },
+        error: (error) => console.log(`getPostStream error:`, error),
         complete: () => console.log(`getPostStream complete`),
       })
-    ;
+      ;
   }
 
   changePosts() {

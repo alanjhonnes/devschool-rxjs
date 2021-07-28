@@ -2,20 +2,24 @@
   Buscar Posts
 </button>
 
-<button  (click)="getPostStream()">
+<button (click)="getPostStream()">
   Escutar por atualizações em posts
 </button>
 
-<button  (click)="changePosts()">
+<button (click)="changePosts()">
   Alterar posts
 </button>
 
-State:
-<pre>
-  {{state$ | async | json}}
-</pre>
+<div>
+  State:
+  <pre>
+    {{state$ | async | json}}
+  </pre>
+</div>
 
-<div *ngFor="let post of posts" (click)="getPost(post.id)" class="post">
+<div *ngFor="let post of posts"
+     (click)="getPost(post.id)"
+     class="post">
   <div>Id: {{ post.id }}</div>
   <div>Titulo: {{ post.title }}</div>
   <div>Conteúdo: {{ post.content }}</div>

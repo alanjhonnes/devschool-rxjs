@@ -15,12 +15,19 @@ export class RequestsService {
     private stateService: StateService,
   ) { }
 
-  getPosts(): Observable<Post[]> {
+  getPosts(filter: string): Observable<Post[]> {
     return new Observable<Post[]>(
       subscriber => {
         console.log('getPosts new subscriber');
+        const posts = this.posts$.getValue();
+        let filteredPosts: Post[];
         const timeoutId = setTimeout(() => {
-          subscriber.next(this.posts$.getValue());
+          if (filter === null || filter.trim() === '') {
+            filteredPosts = posts;
+          } else {
+            filteredPosts = posts.filter(post => post.title.includes(filter));
+          }
+          subscriber.next(filteredPosts);
           subscriber.complete();
           console.log('getPosts emitted');
         }, 1000 + Math.random() * 3000);

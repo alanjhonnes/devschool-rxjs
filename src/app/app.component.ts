@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
-import { Observable } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
+import { Component, OnDestroy } from '@angular/core';
+import { FormControl } from '@angular/forms';
+import { combineLatest, merge, Observable, Subject } from 'rxjs';
+import { concatMap, debounceTime, exhaustMap, map, mergeMap, mergeScan, scan, share, shareReplay, switchMap, take, takeUntil, takeWhile, tap, throttleTime, timeout } from 'rxjs/operators';
 import { RequestsService } from './requests.service';
 import { PostsState, StateService } from './state.service';
 import { Post } from './types';
@@ -10,7 +11,7 @@ import { Post } from './types';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
-export class AppComponent {
+export class AppComponent implements OnDestroy {
 
   posts: Post[] = [];
   loading: boolean = false;
@@ -18,6 +19,13 @@ export class AppComponent {
   state$: Observable<PostsState>;
   postCount$: Observable<number>;
   posts$: Observable<Post[]>;
+
+  searchControl: FormControl;
+  filter$: Observable<string>;
+  filteredPosts$: Observable<Post[]>;
+  filteredPostsBackend$: Observable<Post[]>;
+
+  destroy$ = new Subject<void>();
 
   constructor(
     public requestsService: RequestsService,
@@ -30,7 +38,11 @@ export class AppComponent {
           error: console.error,
           complete: console.warn,
         }),
+        takeUntil(this.destroy$)
       );
+
+    const stateSubscription = this.state$.subscribe();
+
 
     this.posts$ = this.state$
       .pipe(
@@ -44,20 +56,70 @@ export class AppComponent {
         map(
           posts => posts.length,
         )
+      );
+
+    this.searchControl = new FormControl('');
+    this.filter$ = this.searchControl.valueChanges
+      .pipe(
+        // debounceTime(500),
+        tap({
+          next: (search) => {
+            console.log({
+              search
+            })
+          }
+        }),
+        shareReplay(1),
       )
+
+    this.filteredPosts$ = combineLatest([
+      this.filter$,
+      this.posts$,
+    ])
+      .pipe(
+        map(([filter, posts]) => {
+          if (filter === null || filter.trim() === '') {
+            return posts;
+          }
+          return posts.filter(post => post.title.includes(filter));
+        })
+      )
+
+    this.filteredPostsBackend$ = this.filter$
+      .pipe(
+        tap({
+          next: (filter) => {
+            console.log(`filteredPostsBackend filter`, filter);
+          }
+        }),
+        exhaustMap(filter => {
+          return this.getPosts(filter);
+        }),
+        tap({
+          next: (posts) => {
+            console.log(`filteredPostsBackend posts`, posts);
+          }
+        }),
+        takeUntil(this.destroy$),
+        share(),
+      )
+
+
+
+    // this.cruzamentoFilters$ = merge([this.filter$, this.filteredPostsBackend$])
+    //   .pipe(
+    //     scan((acc, [filter, posts]) => {
+
+    //     }))
+    //     )
+
+
+
+
   }
 
-  getPosts() {
-    this.requestsService.getPosts()
-      .subscribe({
-        next: (posts) => {
-          console.log(`getPosts next:`, posts);
-          this.posts = posts;
-        },
-        error: (error) => console.log(`getPosts error:`, error),
-        complete: () => console.log(`getPosts complete`),
-      })
-
+  getPosts(filter: string) {
+    return this.requestsService.getPosts(filter);
   }
 
   getPost(id: number) {
@@ -84,5 +146,10 @@ export class AppComponent {
 
   changePosts() {
     this.requestsService.changePosts();
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

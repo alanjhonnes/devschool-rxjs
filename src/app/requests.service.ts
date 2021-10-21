@@ -32,11 +32,34 @@ export class RequestsService {
       });
   }
 
+  getFilteredPosts(filtro: string) {
+    return new Observable<Post[]>(
+      subscriber => {
+        console.log('getFilteredPosts new subscriber');
+        const timeoutId = setTimeout(() => {
+          const posts = this.stateService.getState().posts
+            .filter(p => filtro
+              ? p.title.includes(filtro)
+              : true);
+          subscriber.next(posts);
+          subscriber.complete();
+          console.log('getFilteredPosts emitted/completed');
+        }, 1000 + Math.random() * 3000);
+
+        return () => {
+          console.log('getFilteredPosts teardown');
+          clearTimeout(timeoutId);
+        }
+      });
+  }
+
   getPost(id: number): Observable<Post | null> {
     return new Observable<Post | null>(subscriber => {
+      subscriber.error(new Error('erro'));
       console.log(`getPost(${id}) new subscriber`);
       const timeoutId = setTimeout(() => {
-        const post = this.posts$.getValue().find(post => post.id === id) || null;
+        const post = this.posts$.getValue()
+          .find(post => post.id === id) || null;
         subscriber.next(post);
         subscriber.complete();
         console.log(`getPost(${id}) emitted`);

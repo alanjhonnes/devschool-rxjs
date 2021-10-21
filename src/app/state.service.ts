@@ -29,4 +29,8 @@ export class StateService {
   getStateStream() {
     return this.state$.asObservable();
   }
+
+  getState() {
+    return this.state$.getValue();
+  }
 }

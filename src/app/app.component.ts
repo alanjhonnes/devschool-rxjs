@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
-import { Observable } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
+import { FormControl } from '@angular/forms';
+import { combineLatest, Observable } from 'rxjs';
+import { debounceTime, finalize, map, mergeMap, startWith, switchMap, tap } from 'rxjs/operators';
 import { RequestsService } from './requests.service';
 import { PostsState, StateService } from './state.service';
 import { Post } from './types';
@@ -18,28 +19,59 @@ export class AppComponent {
   state$: Observable<PostsState>;
   postCount$: Observable<number>;
   posts$: Observable<Post[]>;
+  filteredPosts$: Observable<Post[]>;
+
+  searchControl = new FormControl('');
 
   constructor(
     public requestsService: RequestsService,
     public stateService: StateService,
   ) {
+
+    this.searchControl.valueChanges
+      .subscribe(valor => {
+        // console.log(`valor do formulário: ${valor}`);
+      })
+
     this.state$ = this.stateService.getStateStream()
       .pipe(
         tap({
-          next: console.log,
+          next: (valor) => console.log(`next valor: ${valor}`),
           error: console.error,
           complete: console.warn,
         }),
       );
 
-    this.posts$ = this.state$
+    this.posts$ = this.state$.pipe(
+      map(state => state.posts)
+    )
+
+    this.filteredPosts$ = this.searchControl
+      .valueChanges
       .pipe(
-        map(
-          state => state.posts,
-        )
+        startWith(this.searchControl.value),
+        debounceTime(1000),
+        switchMap((filtro) => {
+          return this.requestsService.getFilteredPosts(filtro)
+        })
       )
 
-    this.postCount$ = this.posts$
+    // this.filteredPosts$ = combineLatest([
+    //   this.posts$,
+    //   this.searchControl.valueChanges
+    //     .pipe(
+    //       startWith(this.searchControl.value),
+    //     ),
+    // ])
+    //   .pipe(
+    //     map(([posts, filtro]) => {
+    //       console.log(`map: ${JSON.stringify(posts)} : ${filtro}`)
+    //       return posts
+    //         .filter(post => post.title.includes(filtro));
+    //     })
+    //   )
+
+    this.postCount$ = this.filteredPosts$
       .pipe(
         map(
           posts => posts.length,
@@ -60,12 +92,31 @@ export class AppComponent {
 
   }
 
+  selectPost(post: Post) {
+    this.stateService.setState({
+      currentPost: post,
+    });
+  }
+
   getPost(id: number) {
+    this.loading = true;
     this.requestsService.getPost(id)
+      .pipe(
+        finalize(() => {
+          console.log('finalize');
+          this.loading = false;
+        })
+      )
       .subscribe({
         next: (post) => console.log(`getPost next ${id}:`, post),
-        error: (error) => console.log(`getPost error ${id}:`, error),
-        complete: () => console.log(`getPost complete ${id}`),
+        error: (error) => {
+          this.loading = false;
+          console.log(`getPost error ${id}:`, error)
+        },
+        complete: () => {
+          this.loading = false;
+          console.log(`getPost complete ${id}`)
+        },
       })
   }
 

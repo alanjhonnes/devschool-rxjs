@@ -4,7 +4,7 @@ import { Post } from './types';
 
 export interface PostsState {
   posts: Post[],
-  currentPost: Post | null,
+  currentPostId: number | null,
 }
 
 @Injectable({
@@ -14,7 +14,7 @@ export class StateService {
 
   private state$ = new BehaviorSubject<PostsState>({
     posts: [],
-    currentPost: null,
+    currentPostId: null,
   });
 
   constructor() { }
@@ -28,5 +28,12 @@ export class StateService {
 
   getStateStream() {
     return this.state$.asObservable();
+  }
+
+  selectPost(postId: number) {
+    this.state$.next({
+      ...this.state$.getValue(),
+      currentPostId: postId
+    })
   }
 }

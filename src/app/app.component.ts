@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
-import { RequestsService } from './requests.service';
+import { PostsService } from './posts.service';
 import { PostsState, StateService } from './state.service';
 import { Post } from './types';
 
@@ -18,9 +18,10 @@ export class AppComponent {
   state$: Observable<PostsState>;
   postCount$: Observable<number>;
   posts$: Observable<Post[]>;
+  currentPost$: Observable<Post | null>;
 
   constructor(
-    public requestsService: RequestsService,
+    public postsService: PostsService,
     public stateService: StateService,
   ) {
     this.state$ = this.stateService.getStateStream()
@@ -45,23 +46,42 @@ export class AppComponent {
           posts => posts.length,
         )
       )
+
+    this.currentPost$ = this.state$
+      .pipe(
+        map(state => {
+          if (state.currentPostId === null) {
+            return null
+          }
+          return state.posts
+            .find(post => post.id === state.currentPostId) || null
+        })
+      )
   }
 
   getPosts() {
-    this.requestsService.getPosts()
+    this.loading = true
+    this.postsService.getPosts()
       .subscribe({
         next: (posts) => {
           console.log(`getPosts next:`, posts);
           this.posts = posts;
+          this.loading = false
         },
-        error: (error) => console.log(`getPosts error:`, error),
-        complete: () => console.log(`getPosts complete`),
+        error: (error) => {
+          console.log(`getPosts error:`, error)
+          this.loading = false
+        },
+        complete: () => {
+          console.log(`getPosts complete`)
+          this.loading = false
+        },
       })
 
   }
 
   getPost(id: number) {
-    this.requestsService.getPost(id)
+    this.postsService.getPost(id)
       .subscribe({
         next: (post) => console.log(`getPost next ${id}:`, post),
         error: (error) => console.log(`getPost error ${id}:`, error),
@@ -70,7 +90,7 @@ export class AppComponent {
   }
 
   getPostStream() {
-    return this.requestsService.getStreamOfPosts()
+    return this.postsService.getStreamOfPosts()
       .subscribe({
         next: (posts) => {
           console.log(`getPostStream next:`, posts);
@@ -83,6 +103,10 @@ export class AppComponent {
   }
 
   changePosts() {
-    this.requestsService.changePosts();
+    this.postsService.changePosts();
+  }
+
+  selectPost(postId: number) {
+    this.stateService.selectPost(postId)
   }
 }

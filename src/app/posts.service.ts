@@ -1,15 +1,18 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, interval, map, Observable } from 'rxjs';
 import { delay, mergeMap } from 'rxjs/operators';
+import { environment } from 'src/environments/environment';
 import { StateService } from './state.service';
 import { Post } from './types';
 
 @Injectable({
   providedIn: 'root'
 })
-export class RequestsService {
+export class PostsService {
 
   posts$ = new BehaviorSubject<Post[]>([]);
+
+  readonly apiPath = `${environment.apiPath}/posts`;
 
   constructor(
     private stateService: StateService,

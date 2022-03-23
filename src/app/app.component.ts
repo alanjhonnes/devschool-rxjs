@@ -25,13 +25,14 @@ export class AppComponent {
     public stateService: StateService,
   ) {
     this.state$ = this.stateService.getStateStream()
-      .pipe(
-        tap({
-          next: console.log,
-          error: console.error,
-          complete: console.warn,
-        }),
-      );
+      // .pipe(
+      //   tap({
+      //     next: console.log,
+      //     error: console.error,
+      //     complete: console.warn,
+      //   }),
+      // )
+      ;
 
     this.posts$ = this.state$
       .pipe(

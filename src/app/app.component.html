@@ -4,9 +4,9 @@
 
 <button (click)="changePosts()">Alterar posts</button>
 
-<div *ngIf="loading; else loaded">Carregando</div>
+<div *ngIf="loading">Carregando</div>
 
-<ng-template #loaded>
+<!-- <ng-template #loaded>
   <div>
     <h1>state$:</h1>
     <pre style="background-color: aqua">{{ state$ | async | json }}</pre>
@@ -15,9 +15,15 @@
     <div>CurrentPost:</div>
     <pre style="background-color: aqua">{{ currentPost$ | async | json }}</pre>
   </div>
-</ng-template>
+</ng-template> -->
 
-<div>
+<div *ngFor="let post of posts" (click)="selectPost(post.id)" class="post">
+  <div>Id: {{ post.id }}</div>
+  <div>Titulo: {{ post.title }}</div>
+  <div>Conteúdo: {{ post.content }}</div>
+</div>
+
+<!-- <div>
   <h1>posts$</h1>
   <div
     *ngFor="let post of posts$ | async"
@@ -28,4 +34,4 @@
     <div>Titulo: {{ post.title }}</div>
     <div>Conteúdo: {{ post.content }}</div>
   </div>
-</div>
+</div> -->

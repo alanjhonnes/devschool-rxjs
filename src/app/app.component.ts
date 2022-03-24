@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
-import { Observable } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
+import { combineLatest, Observable, Subject } from 'rxjs';
+import { distinctUntilChanged, exhaustMap, finalize, map, mergeMap, retry, switchMap, tap } from 'rxjs/operators';
 import { PostsService } from './posts.service';
 import { PostsState, StateService } from './state.service';
 import { Post } from './types';
@@ -19,26 +19,28 @@ export class AppComponent {
   postCount$: Observable<number>;
   posts$: Observable<Post[]>;
   currentPost$: Observable<Post | null>;
+  currentPostId$: Observable<number | null>;
+
+  getPostClick$ = new Subject<any>()
 
   constructor(
     public postsService: PostsService,
     public stateService: StateService,
   ) {
     this.state$ = this.stateService.getStateStream()
-      // .pipe(
-      //   tap({
-      //     next: console.log,
-      //     error: console.error,
-      //     complete: console.warn,
-      //   }),
-      // )
+      .pipe(
+        tap({
+          next: (state) => {
+            console.log(`tap next: ${JSON.stringify(state)}`)
+          }
+        })
+      )
       ;
 
     this.posts$ = this.state$
       .pipe(
-        map(
-          state => state.posts,
-        )
+        map(state => state.posts),
+        distinctUntilChanged()
       )
 
     this.postCount$ = this.posts$
@@ -48,34 +50,67 @@ export class AppComponent {
         )
       )
 
-    this.currentPost$ = this.state$
+    this.currentPostId$ = this.state$
       .pipe(
-        map(state => {
-          if (state.currentPostId === null) {
+        map(state => state.currentPostId),
+        distinctUntilChanged()
+      )
+
+    this.currentPost$ = combineLatest([
+      this.posts$,
+      this.currentPostId$
+    ])
+      .pipe(
+        tap({
+          next: values => {
+            console.log("tap values combine latest")
+          }
+        }),
+        map(([posts, currentPostId]) => {
+          if (currentPostId === null) {
             return null
           }
-          return state.posts
-            .find(post => post.id === state.currentPostId) || null
+          return posts
+            .find(post => post.id === currentPostId) || null
         })
       )
+
+    this.getPostClick$
+      .pipe(
+        switchMap((id) => {
+          return this.postsService.getPost(id)
+        })
+      )
+      .subscribe({
+        next: (posts) => {
+          console.log("posts received", posts)
+        }
+      })
+  }
+
+  getPostClicked() {
+    this.getPostClick$.next({})
   }
 
   getPosts() {
     this.loading = true
     this.postsService.getPosts()
+      .pipe(
+        retry(3),
+        finalize(() => {
+          this.loading = false
+        })
+      )
       .subscribe({
         next: (posts) => {
           console.log(`getPosts next:`, posts);
           this.posts = posts;
-          this.loading = false
         },
         error: (error) => {
           console.log(`getPosts error:`, error)
-          this.loading = false
         },
         complete: () => {
           console.log(`getPosts complete`)
-          this.loading = false
         },
       })
 

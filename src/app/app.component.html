@@ -1,12 +1,12 @@
-<button (click)="getPosts()">Buscar Posts</button>
+<button (click)="getPostClicked()">Buscar Posts</button>
 
 <button (click)="getPostStream()">Escutar por atualizações em posts</button>
 
 <button (click)="changePosts()">Alterar posts</button>
 
-<div *ngIf="loading">Carregando</div>
+<div *ngIf="loading; else loaded">Carregando</div>
 
-<!-- <ng-template #loaded>
+<ng-template #loaded>
   <div>
     <h1>state$:</h1>
     <pre style="background-color: aqua">{{ state$ | async | json }}</pre>
@@ -15,9 +15,13 @@
     <div>CurrentPost:</div>
     <pre style="background-color: aqua">{{ currentPost$ | async | json }}</pre>
   </div>
-</ng-template> -->
+</ng-template>
 
-<div *ngFor="let post of posts" (click)="selectPost(post.id)" class="post">
+<div
+  *ngFor="let post of posts$ | async"
+  (click)="selectPost(post.id)"
+  class="post"
+>
   <div>Id: {{ post.id }}</div>
   <div>Titulo: {{ post.title }}</div>
   <div>Conteúdo: {{ post.content }}</div>

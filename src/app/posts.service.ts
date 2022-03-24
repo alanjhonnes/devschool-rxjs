@@ -23,9 +23,15 @@ export class PostsService {
       subscriber => {
         console.log('getPosts new subscriber');
         const timeoutId = setTimeout(() => {
-          subscriber.next(this.posts$.getValue());
-          subscriber.complete();
-          console.log('getPosts emitted');
+          const rand = Math.random()
+          if (rand > 1) {
+            subscriber.error(new Error("erro"))
+            console.log('erro');
+          } else {
+            subscriber.next(this.posts$.getValue());
+            subscriber.complete();
+            console.log('getPosts emitted');
+          }
         }, 1000 + Math.random() * 3000);
 
         return () => {
